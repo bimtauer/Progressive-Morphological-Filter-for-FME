@@ -10,9 +10,23 @@ with open("GEOTIFF.asc") as data:
     content = data.readlines()
 """    
 
+"""
+FME Structure start:
 
-import numpy as np
-import time
+import fmeobjects
+
+class FeatureProcessor(object):
+    def __init_(self):
+	pass
+
+    def input(self, feature):
+	self.featureList.append(feature)
+	pass
+
+    def close(self):
+	pass
+
+"""
 import pandas as pd
 
 
