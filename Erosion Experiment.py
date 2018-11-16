@@ -20,11 +20,12 @@ dhmax = 0.3
 #Grid size
 a = 0.5
 #Kernel Size   
-kernel = (9,9) #only uneven numbers!
+kernel = (15,15) #only uneven numbers!
 
 ###############################################################################
 
 def maxSlopeErosion(input, kernel, dhmax):
+    
     def setupStructureElement(kernel, dhmax):
         #Throw error if kernel set wrong
         if kernel[0]%2 == 0 or kernel[1]%2 == 0:
@@ -65,3 +66,25 @@ filtered = maxSlopeFilter(raster, kernel, dhmax)
 
 # Out to Ascii  
 asciiOut(filtered, "Slope_Erosion_filtered_{}kernel_{}dhmax".format(str(kernel[0])+str(kernel[1]), dhmax))
+
+
+###############################################################################
+#Examples:
+"""
+s = np.array([[2,1,1],
+              [2,1,2],
+              [2,1,2]])
+
+t = np.zeros((7,7), dtype=np.int)
+t[1:6, 1:6] = 3
+t[4,4] = 2; a[2,3] = 1
+
+test_out = ndimage.morphology.grey_erosion(t, structure = s)
+
+###############################################################################
+
+t = raster[10:15,10:15]
+s = setupStructureElement(kernel, dhmax)
+test_out = ndimage.morphology.grey_erosion(t, structure = s)
+standard_erosion = ndimage.morphology.grey_erosion(t, size = (3,3))
+"""

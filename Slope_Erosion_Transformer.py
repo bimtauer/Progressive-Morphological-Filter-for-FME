@@ -1,3 +1,19 @@
+"""
+Requires scipy to be installed
+
+This code is to be pasted into an FME PythonCaller which receives a raster as
+input. Currently supported band interpretations include Real64 and Real32. Other
+formats can be added. 
+
+The code first unpacks the fme raster object and loads it into a numpy array.
+On this array it performs an erosion with a kernel function that determins a cutoff
+value for z-difference depending on distance between two points. This method is
+discussed by Vosselman, G. (2000) "Slope based filtering of Laser Altimetry data"
+It filters the input raster, retaining points within the desired cutoff. 
+
+The output is again an FME raster object
+"""
+
 import fmeobjects
 import numpy as np
 from scipy import ndimage
@@ -11,14 +27,14 @@ class MyTilePopulator(fmeobjects.FMEBandTilePopulator):
     # Implement 'clone' method.
     # It will be called multiple times while creating a new band.
     def clone(self):
-        return MyUInt8BandTilePopulator(self.dataArray)
+        return MyTilePopulator(self.dataArray)
         
     # Implement 'getTile' method.
     # You can create a new tile containing desired contents here.
     # It's not essential to use the parameters: startRow, startCol, tile.
     def getTile(self, startRow, startCol, tile):
         numRows, numCols = len(self.dataArray), len(self.dataArray[0])
-        newTile = fmeobjects.FMEInt8Tile(numRows, numCols)                      # <------------
+        newTile = fmeobjects.FMEReal64Tile(numRows, numCols)                      # <------------
         newTile.setData(self.dataArray)      
         return newTile
         
@@ -36,16 +52,11 @@ class RasterBandStatisticsCalculator(object):
     def __init__(self):
         # Specify main parameters:
         #Slope tolerance delta H max - tolerated increase in H for distance between two points
-        self.dhmax = 0.3
-        
+        self.dhmax = 0.3      
         #Grid size
         self.a = 0.5
-        
         #Kernel Size   
-        self.kernel = (9,9) #only uneven numbers!
-        
-        
-        
+        self.kernel = (15,15) #only uneven numbers!
     # Returns a tuple (tile object, interpretation name).
     # This method returns (None, 'Unsupported')
     # when the specified interpretation was not supported,
@@ -81,7 +92,7 @@ class RasterBandStatisticsCalculator(object):
         return values
     
     ###########################################################################
-    
+    #My code
     def maxSlopeErosion(self, input, kernel, dhmax):
         def setupStructureElement(kernel, dhmax):
             #Throw error if kernel set wrong
@@ -141,18 +152,9 @@ class RasterBandStatisticsCalculator(object):
     def close(self):
         # Contents of a tile for a band to be created.
         # A list of row data, each element is a list of column values.
-        dataArray = np.clip(self.filtered[:10,:10].astype(int), 0, 40)
-        
-        print("####", dataArray , "####")
-        
-        #reassign for test
-        dataArray = [
-            [  0, 128,   0, 128,   0, 128,   0],
-            [128,   0, 128,   0, 128,   0, 128],
-            [  0, 128,   0, 128,   0, 128,   0],
-            [128,   0, 128,   0, 128,   0, 128],
-            [  0, 128,   0, 128,   0, 128,   0],
-        ]
+        dataArray = self.filtered.astype(float)
+        dataArray[np.isnan(dataArray)]=-9999.0
+        dataArray = dataArray.tolist()
         
         
         # Properties of a raster to be created.
@@ -170,16 +172,18 @@ class RasterBandStatisticsCalculator(object):
         
         # Create a new band and append it to the raster.
         # It's optional to specify Nodata value when creating a band.
-        print("Just before")
+        print("Test1")
         bandTilePopulator = MyTilePopulator(dataArray)                 # <------------ changed class name
-        print("Passed")
+        
         bandName = 'My Int8 Band' # can be set to empty.
         bandProperties = fmeobjects.FMEBandProperties(bandName,
-            fmeobjects.FME_INTERPRETATION_INT8,                         # <----------- changed from UInt8
+            fmeobjects.FME_INTERPRETATION_REAL64,                         # <----------- changed from UInt8
             fmeobjects.FME_TILE_TYPE_FIXED,
             numRows, numCols)
-        nodataValue = fmeobjects.FMEInt8Tile(1, 1)                      # <----------- changed from UInt8
-        #nodataValue.setData([[]])
+        print("Test2")
+        nodataValue = fmeobjects.FMEReal64Tile(1, 1)                      # <----------- changed from UInt8
+        nodataValue.setData([[-9999.0]])
+        print("Test3")
         band = fmeobjects.FMEBand(bandTilePopulator,
             rasterProperties, bandProperties, nodataValue)
         raster.appendBand(band)
@@ -187,6 +191,7 @@ class RasterBandStatisticsCalculator(object):
         # Create and output a feature containing the raster created above.
         feature = fmeobjects.FMEFeature()
         feature.setGeometry(raster)
+        print("Just before")
         self.pyoutput(feature) 
     
       

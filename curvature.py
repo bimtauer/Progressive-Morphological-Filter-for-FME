@@ -30,7 +30,6 @@ class FeatureProcessor(object):
 
 import numpy as np
 import time
-import pandas as pd
 
 
 #Manually deleted first 6 text lines
@@ -50,7 +49,7 @@ def normalVectorEstimation(raster):
     cols = padded.shape[1]
     
     print("Beginning normal vector estimation...")
-    start = time.clock()
+    start = time.process_time()
     for i in range(1, rows-1):
         for j in range(1, cols-1):
             #Surrounding points
@@ -66,7 +65,7 @@ def normalVectorEstimation(raster):
             
             out[i-1, j-1] = unit_normal
     
-    end = time.clock()        
+    end = time.process_time()        
     print("Done after {0:.2f} seconds.".format(end - start))
     return out
 
