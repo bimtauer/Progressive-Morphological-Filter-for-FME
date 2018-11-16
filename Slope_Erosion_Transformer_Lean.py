@@ -128,13 +128,15 @@ class ErosionKernel(object):
 
     def maxSlopeFilter(self, input_raster, kernel, dhmax):
         #Replace -9999 with NaN
-        input_raster[input_raster==-9999]=np.nan
+        input_raster[input_raster==-9999]=9999
 
         #Call Erosion
         eroded = self.maxSlopeErosion(input_raster, kernel, dhmax)
 
         #Only return those below cutoff
         output = np.where(input_raster <= eroded, input_raster, np.nan)
+        #Reintroduce nan
+        output[output==9999]=np.nan
         return output
 
     ###########################################################################
@@ -169,7 +171,7 @@ class ErosionKernel(object):
         dataArray[np.isnan(dataArray)]=-9999.0
         dataArray = dataArray.tolist()
 
-        
+
 
         bandTilePopulator = MyTilePopulator(dataArray)                 # <------------ changed class name
 

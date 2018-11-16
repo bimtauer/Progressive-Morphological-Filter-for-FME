@@ -11,6 +11,7 @@ from writers import asciiOut
 
 #Manually deleted first 6 text lines
 raster = np.loadtxt("raster.asc")
+raster2 = np.loadtxt("MinMaxComparisonResult.asc")
 
 ###############################################################################
 # Specify main parameters:
@@ -20,12 +21,11 @@ dhmax = 0.3
 #Grid size
 a = 0.5
 #Kernel Size   
-kernel = (15,15) #only uneven numbers!
+kernel = (3,3) #only uneven numbers!
 
 ###############################################################################
 
 def maxSlopeErosion(input, kernel, dhmax):
-    
     def setupStructureElement(kernel, dhmax):
         #Throw error if kernel set wrong
         if kernel[0]%2 == 0 or kernel[1]%2 == 0:
@@ -49,14 +49,17 @@ def maxSlopeErosion(input, kernel, dhmax):
     return output
 
 def maxSlopeFilter(input_raster, kernel, dhmax):
-    #Replace -9999 with NaN
-    input_raster[input_raster==-9999]=np.nan
+    #Replace -9999 with 9999 to avoid padding issue
+    input_raster[input_raster==-9999]=9999
 
     #Call Erosion
     eroded = maxSlopeErosion(input_raster, kernel, dhmax)
+    
 
     #Only return those below cutoff
     output = np.where(input_raster <= eroded, input_raster, np.nan)
+    #Reintroduce nan
+    output[output==9999]=np.nan
     return output
 
 ###############################################################################
@@ -82,9 +85,15 @@ t[4,4] = 2; a[2,3] = 1
 test_out = ndimage.morphology.grey_erosion(t, structure = s)
 
 ###############################################################################
+a = np.zeros((7,7), dtype=np.int)
+a[1:6, 1:6] = 3
+a[4,4] = 2; a[2,3] = 1
+a
 
-t = raster[10:15,10:15]
-s = setupStructureElement(kernel, dhmax)
-test_out = ndimage.morphology.grey_erosion(t, structure = s)
-standard_erosion = ndimage.morphology.grey_erosion(t, size = (3,3))
+
+test_out = ndimage.morphology.grey_erosion(a, size = (3,3))
+
+t = raster[0:5,0:5]
+t = np.pad(t, 1, "constant")
+test_out2 = ndimage.morphology.grey_erosion(t, size = (3,3))
 """
