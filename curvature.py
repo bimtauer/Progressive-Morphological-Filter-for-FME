@@ -33,7 +33,7 @@ import time
 
 
 #Manually deleted first 6 text lines
-raster = np.loadtxt("raster.asc")
+raster = np.loadtxt("Data/raster.asc")
 
 #Grid size
 a = 0.5
@@ -44,6 +44,7 @@ def normalVectorEstimation(raster):
     
     #Padding Raster
     padded = np.pad(raster, 1, "median")
+    padded = np.where(padded==-9999, np.nan, padded)
     
     rows = padded.shape[0]
     cols = padded.shape[1]
@@ -52,11 +53,18 @@ def normalVectorEstimation(raster):
     start = time.process_time()
     for i in range(1, rows-1):
         for j in range(1, cols-1):
+            #No Normals for Nans
+            """
+            if np.isnan(padded[i,j]):
+                 out[i-1, j-1] = np.nan
+                 continue
+            """
             #Surrounding points
             top = padded[i-1,j]
             bot = padded[i+1,j]
             left = padded[i,j-1]
             right = padded[i,j+1]
+           
             
             # calculating surface normal based on 4 surrounding points:
             normal = np.array([(left - right), (top - bot), (2*a)]) 
