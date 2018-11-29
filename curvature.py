@@ -4,37 +4,14 @@ Created on Tue Nov  6 13:08:55 2018
 
 @author: timbau
 """
-#For Reference
-"""
-with open("GEOTIFF.asc") as data:
-    content = data.readlines()
-"""    
-
-"""
-FME Structure start:
-
-import fmeobjects
-
-class FeatureProcessor(object):
-    def __init_(self):
-	pass
-
-    def input(self, feature):
-	self.featureList.append(feature)
-	pass
-
-    def close(self):
-	pass
-
-"""
 
 import numpy as np
 import time
 
-
+"""
 #Manually deleted first 6 text lines
 raster = np.loadtxt("Data/raster.asc")
-
+"""
 #Grid size
 a = 0.5
 
@@ -44,14 +21,14 @@ def normalVectorEstimation(raster):
     
     #Padding Raster
     padded = np.pad(raster, 1, "median")
-    padded = np.where(padded==-9999, np.nan, padded)
+    padded = np.where(padded==-9999, np.nan, padded) #Don't compute normals on the border to Nan
     
     rows = padded.shape[0]
     cols = padded.shape[1]
     
     print("Beginning normal vector estimation...")
     start = time.process_time()
-    for i in range(1, rows-1):
+    for i in range(1, rows-1):                  #Replace with vectorized solution in future to make faster
         for j in range(1, cols-1):
             #No Normals for Nans
             """
@@ -77,9 +54,9 @@ def normalVectorEstimation(raster):
     print("Done after {0:.2f} seconds.".format(end - start))
     return out
 
-
+"""
 normals = normalVectorEstimation(raster)
-
+"""
 # I also want a reliable ascii out writer
 
 """from astropy.io import ascii
@@ -98,7 +75,7 @@ nodata_value -9999
 """
 
 # Need an x y coordinate grid
-
+"""
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -154,7 +131,7 @@ def sectionVisualizer(yy, xx, smoothing=1): # ii, jj
 
 sectionVisualizer((680,700),(0,20))
  
-        
+"""       
     
     
 """ Not necessary

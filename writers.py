@@ -16,7 +16,7 @@ def asciiOut(input_raster, name):
     nodata_value = -9999
     
     #Replace np.nan with raster nodata value
-    input_raster[np.isnan(input_raster)]= nodata_value
+    input_raster = np.where(np.isnan(input_raster), nodata_value, input_raster)
     
     with open("./Outputs/{}.asc".format(name),"w") as TheFile:
         TheFile.write("ncols {}\n".format(ncols))
