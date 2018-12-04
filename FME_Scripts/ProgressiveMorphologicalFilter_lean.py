@@ -75,7 +75,15 @@ class ProgressiveMorphologicalFilter():
         self.scaling_factor = parameters['scaling_factor']
         self.hole_cutoff = parameters['hole_cutoff']
         
-#Exchanges Raster Band Nodata (-9999) with np.nan
+    #A find and replace function for arrays that can handle np.nan
+    def findReplace(where, find, replace):
+        if np.isnan(find):
+            output = np.where(np.isnan(where), replace, where)
+        else:
+            output = np.where(where == find, replace, where)
+        return output
+    
+    #TODO: Remove the following 3
     def nanFormatter(raster):
         raster = np.where(raster==-9999, np.nan, raster)
         return raster
