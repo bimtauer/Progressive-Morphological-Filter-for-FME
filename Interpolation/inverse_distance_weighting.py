@@ -9,7 +9,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-raster = np.loadtxt("Data/raster.asc")
+#raster = np.loadtxt("Data/raster.asc")
 
 #TODO: Implement kdTree distance computation in place of loop
 
@@ -36,7 +36,7 @@ def findReplace(where, find, replace):
 
 #Own data
 #test = raster[0:300, 0:300]
-test = findReplace(raster, -9999, np.nan)
+#test = findReplace(raster, -9999, np.nan)
 
 def rasterToList(raster):
     leni = raster.shape[0]
@@ -47,7 +47,7 @@ def rasterToList(raster):
     
     x = jj.reshape(leni * lenj,)
     y = ii.reshape(leni * lenj,)
-    z = test.reshape(leni * lenj,)
+    z = raster.reshape(leni * lenj,)
     
     mask = np.isnan(z)
     
@@ -58,7 +58,7 @@ def rasterToList(raster):
     grid = np.zeros((leni, lenj))
     return x, y, z, grid
 
-x, y, z, grid = rasterToList(test)
+x, y, z, grid = rasterToList(output[0:200, 0:200])
 
 grid = iwd(x,y,z,grid,2)
 
@@ -72,7 +72,7 @@ np.count_nonzero(np.isnan(test))
 
 
 
-
+"""
 img1 = plt.imshow(grid.T,origin='lower',interpolation='nearest',cmap='jet')
 #plt.scatter(x,y,c='black',s=120)
 plt.xlim(0,grid.shape[0])
@@ -80,3 +80,4 @@ plt.ylim(0,grid.shape[1])
 plt.colorbar(img1)
 plt.grid()
 plt.show()
+"""
