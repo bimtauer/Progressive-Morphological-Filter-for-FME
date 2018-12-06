@@ -75,14 +75,6 @@ class ProgressiveMorphologicalFilter():
         self.input_raster = input_raster
         self.scaling_factor = self.dhmax/self.dh0
 
-    #A find and replace function for arrays that can handle np.nan
-    def findReplace(self, where, find, replace):
-        if np.isnan(find):
-            output = np.where(np.isnan(where), replace, where)
-        else:
-            output = np.where(where == find, replace, where)
-        return output
-
     # To get rid of holes
     def medianFilter(self, input_raster):
         filter_raster = np.where(np.isnan(input_raster), 9999, input_raster)
@@ -93,7 +85,7 @@ class ProgressiveMorphologicalFilter():
     # The main filter algorithm
     def progressiveMorphologicalfilter(self, raster, slope_threshold, maxk):
         #Replace -9999 with 9999
-        input_raster = self.findReplace(raster, -9999, 9999)
+        input_raster = np.where(raster == -9999, 9999, raster)
         lastSurface = np.copy(input_raster)
 
         mask = np.zeros(input_raster.shape) #The mask we use to indicate non-ground points

@@ -8,12 +8,69 @@ Created on Tue Nov  6 13:08:55 2018
 import numpy as np
 import time
 
-"""
+
 #Manually deleted first 6 text lines
-raster = np.loadtxt("Data/raster.asc")
-"""
+raster = np.loadtxt("../Data/raster.asc")
+
+test = np.arange(25).reshape(5,5)
 #Grid size
-a = 0.5
+c = 0.5
+
+test = raster[0:5, 0:5]
+
+
+def vectorizedNormalVectorEstimation(raster):
+    print("Beginning improved normal vector estimation...")
+    start = time.process_time()
+    raster = np.pad(raster, 1, "median")
+    #TODO: Remove and instead interpolate before
+    raster = np.where(raster==-9999, np.nan, raster)
+    left = raster[:,:-2]
+    right = raster[:,2:]
+    top = raster[:-2,:]
+    bot = raster[2:,:]
+    x = (left - right)[1:-1,:]
+    y = (top - bot)[:,1:-1]
+    magnitudes = np.sqrt(x**2 + y**2 + 1)
+    normals = np.array([x/magnitudes, y/magnitudes, 1/magnitudes])
+    end = time.process_time()        
+    print("Done after {0:.2f} seconds.".format(end - start))
+    return normals
+
+normals_improved = vectorizedNormalVectorEstimation(raster)
+    
+
+
+def stridedNormalVectorEstimation(raster):
+    def rolling_window(a, shape):
+        s = (a.shape[0] - shape[0] + 1,) + (a.shape[1] - shape[1] + 1,) + shape
+        strides = a.strides + a.strides
+        return np.lib.stride_tricks.as_strided(a, shape=s, strides=strides)
+    print("Beginning strided normal vector estimation...")
+    start = time.process_time()
+    padded = np.pad(raster, 1, "median")
+    padded = np.where(padded==-9999, np.nan, padded)
+    windows = rolling_window(padded, (3,3))
+    
+    out = np.zeros((raster.shape[0], raster.shape[1], 3))
+    for i in range(windows.shape[0]):
+        for j in range(windows.shape[1]):
+            current = windows[i,j,:,:]
+            top = current[0,1]
+            bot = current[2,1]
+            left = current[1,0]
+            right = current[1,2]
+           
+            # calculating surface normal based on 4 surrounding points:
+            normal = np.array([(left - right), (top - bot), (2*a)]) 
+            mag = np.sqrt(normal.dot(normal))
+            unit_normal = normal / mag
+            
+            out[i, j] = unit_normal
+    end = time.process_time()        
+    print("Done after {0:.2f} seconds.".format(end - start))
+    return out
+        
 
 def normalVectorEstimation(raster):
     #Creating 3d matrix to store resulting vectors
@@ -44,7 +101,7 @@ def normalVectorEstimation(raster):
            
             
             # calculating surface normal based on 4 surrounding points:
-            normal = np.array([(left - right), (top - bot), (2*a)]) 
+            normal = np.array([(left - right), (top - bot), (2*c)]) 
             mag = np.sqrt(normal.dot(normal))
             unit_normal = normal / mag
             
@@ -54,9 +111,10 @@ def normalVectorEstimation(raster):
     print("Done after {0:.2f} seconds.".format(end - start))
     return out
 
-"""
+
 normals = normalVectorEstimation(raster)
-"""
+normals2 = stridedNormalVectorEstimation(raster)
+
 # I also want a reliable ascii out writer
 
 """from astropy.io import ascii

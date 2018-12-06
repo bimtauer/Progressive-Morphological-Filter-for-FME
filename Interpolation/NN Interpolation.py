@@ -9,17 +9,10 @@ from scipy.interpolate import NearestNDInterpolator
 import numpy as np
 import matplotlib.pyplot as plt
 
-#raster = np.loadtxt("Outputs/MorphFilteredtestIn.asc")
+raster = np.loadtxt("../Outputs/MorphFilteredtestIn.asc")
 
-def findReplace(where, find, replace):
-    if np.isnan(find):
-        output = np.where(np.isnan(where), replace, where)
-    else:
-        output = np.where(where == find, replace, where)
-    return output
 #Own data
-test = np.copy(output)
-#test = findReplace(test, -9999, np.nan)
+test = np.where(raster == -9999, np.nan, raster)
 
 def rasterToList(raster):
     leni = raster.shape[0]

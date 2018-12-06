@@ -58,15 +58,14 @@ class RasterWriter():
 
         bandTilePopulator = MyTilePopulator(dataArray)                 # <------------ changed class name
 
-        bandName = "Slope Erosion Filtered"
+        bandName = "Modified"
         bandProperties = fmeobjects.FMEBandProperties(bandName,
             fmeobjects.FME_INTERPRETATION_REAL64,                         # <----------- changed from UInt8
             fmeobjects.FME_TILE_TYPE_FIXED,
             self.rasterProperties.getNumRows(), self.rasterProperties.getNumCols())
         nodataValue = fmeobjects.FMEReal64Tile(1, 1)                      # <----------- changed from UInt8
         nodataValue.setData([[-9999.0]])
-        band = fmeobjects.FMEBand(bandTilePopulator,
-            self.rasterProperties, bandProperties, nodataValue)
+        band = fmeobjects.FMEBand(bandTilePopulator, rasterProperties, bandProperties, nodataValue)
         raster.appendBand(band)
         return raster
 

@@ -2,7 +2,6 @@ import fmeobjects
 import numpy as np
 # Raster reading and writing functions based on code from Takashi: https://knowledge.safe.com/questions/38000/python-fme-objects-api-for-raster-manipulation.html
 
-
 class RasterReader:
     def __init__(self, feature):
         raster = feature.getGeometry()
@@ -11,8 +10,9 @@ class RasterReader:
             self.rasterProperties = raster.getProperties()
             self.numRows, self.numCols = self.rasterProperties.getNumRows(), self.rasterProperties.getNumCols()
             self.band = raster.getBand(0)
-            self.bandProperties = self.band.getProperties()
-            interpretation = self.bandProperties.getInterpretation()
+
+            bandProperties = self.band.getProperties()
+            interpretation = bandProperties.getInterpretation() #Not necessary
             self.tile, interpret = self.tileAndInterpretation(interpretation, self.numRows, self.numCols)
             print("Tile is:", self.tile)
             print("Raster interpretion is {}".format(interpret))
@@ -39,10 +39,8 @@ class RasterReader:
         else:
             raise TypeError("Data interpretation not yet added to tileAndInterpretation.")
         tiles_matrix = np.array([values])
-        tiles_matrix = tiles_matrix.reshape(self.numRows, self.numCols) #From this point on i have my numpy array
+        tiles_matrix = tiles_matrix.reshape(self.numRows, self.numCols) #From this point on i have my raster
         return tiles_matrix, self.rasterProperties
-
-################################################################################
 
 class MyTilePopulator(fmeobjects.FMEBandTilePopulator):
     def __init__(self, dataArray):
@@ -71,54 +69,28 @@ class MyTilePopulator(fmeobjects.FMEBandTilePopulator):
     def setOutputSize(self, rows, cols):
         return (rows, cols)
 
-class RasterWriter:
+class RasterWriter():
     def __init__(self):
         # Properties of a raster to be created.
         pass
 
-
     def write(self, dataArray, rasterProperties):
         # Taking over our input raster's properties
         raster = fmeobjects.FMERaster(rasterProperties)
+
         #Clean the output array
         dataArray[np.isnan(dataArray)]=-9999.0
         dataArray = dataArray.tolist()
+
         bandTilePopulator = MyTilePopulator(dataArray)                 # <------------ changed class name
+
         bandName = "Modified"
         bandProperties = fmeobjects.FMEBandProperties(bandName,
-                                                    fmeobjects.FME_INTERPRETATION_REAL64,                         # <----------- changed from UInt8
-                                                    fmeobjects.FME_TILE_TYPE_FIXED,
-                                                    rasterProperties.getNumRows(),
-                                                    rasterProperties.getNumCols())
+            fmeobjects.FME_INTERPRETATION_REAL64,                         # <----------- changed from UInt8
+            fmeobjects.FME_TILE_TYPE_FIXED,
+            rasterProperties.getNumRows(), rasterProperties.getNumCols())
         nodataValue = fmeobjects.FMEReal64Tile(1, 1)                      # <----------- changed from UInt8
         nodataValue.setData([[-9999.0]])
         band = fmeobjects.FMEBand(bandTilePopulator, rasterProperties, bandProperties, nodataValue)
         raster.appendBand(band)
         return raster
-
-
-class FeatureProcessor(object):
-    def __init__(self):
-        # Specify main parameters:
-        # TBC
-        pass
-
-    def input(self, feature):
-
-        #1. Pass feature to reader and receive extracted tiles
-        MyRasterReader = RasterReader(feature)
-        self.data, self.rasterProperties = MyRasterReader.read(feature)
-        print(self.data)
-        #2. Call some operation on these tiles and receive output
-        return
-
-    def close(self):
-        MyWriter = RasterWriter()
-        outputRaster = MyWriter.write(self.data, self.rasterProperties)
-
-        # Create and output a feature containing the raster created above.
-        feature = fmeobjects.FMEFeature()
-        feature.setGeometry(outputRaster)
-        print("Saving raster output.")
-        self.pyoutput(feature)
-        pass
