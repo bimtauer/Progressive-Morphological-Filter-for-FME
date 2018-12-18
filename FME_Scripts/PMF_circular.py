@@ -50,73 +50,76 @@ Vosselman, G. (2000). Slope based filtering of laser altimetry data. Internation
 
 import numpy as np
 from scipy import ndimage
-from .MyRasterTools import slopeEstimation, nnInterpolation, tinInterpolation
+from .MyRasterTools import slopeEstimation, tinInterpolation, nnInterpolation
 
 ################################################################################
 # The Filter Class
-"""
+
 # Parameters
 parameters = {'c' : 0.5,                     # The cell size of the input raster
               'kernel_radius' : 2,           # The kernel size of the first filter iteration
-              'initial_cutoff' : 0.4,        # The slope threshold of the first filter iteration
+              'initial_cutoff' : 0.4,        # The slope threshold of the first filtr iteration
               'average_sigma' : 7,           # The gaussian function used to average out local slope
               'dh0' : 0.1,                   # The slope threshold for flat areas
+              'dhmax' : 1.0,                 # The slope threshold at maximum slope
               'hole_cutoff' : -0.2}          # Threshold for individual holes beneath median in 3x3 kernel
-"""
+
 class ProgressiveMorphologicalFilter():
     def __init__(self, input_raster, parameters):
         for key, value in parameters.items():
             setattr(self, key, value)
-        
-        #Interpolate nan
-        self.input_raster = tinInterpolation(input_raster)
-        
+
+        self.input_raster = input_raster
+        self.scaling_factor = self.dhmax/self.dh0
+
     # To get rid of holes
     def medianFilter(self, input_raster):
-        filter_raster = nnInterpolation(input_raster)
+        filter_raster = np.where(np.isnan(input_raster), 9999, input_raster)
         median = ndimage.median_filter(filter_raster, size = (3,3))
         output = np.where(filter_raster - median < self.hole_cutoff, np.nan, input_raster)
         return output
 
     # The main filter algorithm
-    def progressiveMorphologicalfilter(self, input_raster, slope_threshold):
+    def progressiveMorphologicalfilter(self, slope_threshold):
+        def circularFootprint(cells):
+            y,x = np.ogrid[-cells: cells+1, -cells: cells+1]
+            footprint = x**2+y**2 <= cells**2
+            return footprint
         
-        input_raster = tinInterpolation(input_raster)
-        last_surface = np.copy(input_raster)
+        #Interpolate nan
+        last_surface = nnInterpolation(self.input_raster)
         
         #The mask we use to indicate non-ground points
-        mask = np.zeros(input_raster.shape)
+        mask = np.zeros(self.input_raster.shape)
         final = int(self.kernel_radius/self.c)
         k = 1
         while k <= final:
-            #Generate window
-            w = k*2 + 1
-            window = (w,w)
+            #Generate footprint
+            f = circularFootprint(k)
+            
             #Opening
-            this_surface = ndimage.morphology.grey_opening(last_surface, size = window)
+            this_surface = ndimage.morphology.grey_opening(last_surface, footprint=f)
             #Increasing maxdh by footprint radius in cells
-            dhmax = np.sqrt(k**2 + k**2) * self.c * slope_threshold
+            dhmax = k * self.c * slope_threshold
             #Only mask those below cutoff
-            mask = np.where(input_raster - this_surface > dhmax, 1, mask)      #Could also subtract from last surface
+            mask = np.where(last_surface - this_surface > dhmax, 1, mask)
             last_surface = this_surface
             k += 1          #one step further
 
-        output = np.where(mask, np.nan, input_raster)
+        output = np.where(mask, np.nan, self.input_raster)
         return output
 
-    def scalingMatrix(self, input_raster):
-        z = slopeEstimation(input_raster, self.c)
-        # assume nans are even surfaces
-        z = np.where(np.isnan(z), 0, z)
-        # average slope out with wide gaussian filter
+    def scalingMatrix(self, raster):
+        interpolated_raster = nnInterpolation(raster)
+        z = slopeEstimation(interpolated_raster, self.c)
+        # average normals out with wide gaussian filter
         average_slope = ndimage.gaussian_filter(z, self.average_sigma)
         average_slope += self.dh0
         return average_slope
 
-
     def filter(self):
-        self.hole_filtered = self.medianFilter(self.input_raster)
-        self.initial_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.initial_cutoff)
+        self.initial_filtered = self.progressiveMorphologicalfilter(self.initial_cutoff)
         self.scaling_matrix = self.scalingMatrix(self.initial_filtered)
-        self.final_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.scaling_matrix)
-        return self.final_filtered
+        self.final_filtered = self.progressiveMorphologicalfilter(self.scaling_matrix)
+        self.hole_filtered = self.medianFilter(self.final_filtered)
+        return self.hole_filtered

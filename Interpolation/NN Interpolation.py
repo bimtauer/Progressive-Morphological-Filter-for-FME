@@ -55,7 +55,6 @@ Interpolator = NearestNDInterpolator(coordinates, values)
 interpolation = Interpolator(tointerpolate).reshape(leni,lenj)
 
 interpolated = interpolation - test
-interpolated = findReplace(interpolated, np.nan, 1)
 
 def plotter(raster_list):
     nr_plots = len(raster_list)
