@@ -33,8 +33,8 @@ round of filtering uses a maximal slope cutoff in evenly sloped areas, while
 performing a more moderate filtering along slopes. The parameter scaling_factor
 times 0.1 is then equal to the maximum slope tolerated in steep areas.
 
-The resulting raster is finally filtered for single pixel holes which can be
-assumed to be measurement errors.
+The raster is also initally filtered for single pixel holes which can
+be assumed to be measurement errors.
 
 
 Sources:
@@ -53,37 +53,35 @@ from scipy import ndimage
 from .MyRasterTools import slopeEstimation, nnInterpolation, tinInterpolation
 
 ################################################################################
-# The Filter Class
 """
-# Parameters
+# Parameters (Example)
 parameters = {'c' : 0.5,                     # The cell size of the input raster
-              'kernel_radius' : 2,           # The kernel size of the first filter iteration
+              'kernel_radius' : 6,           # The kernel size of the first filter iteration
               'initial_cutoff' : 0.4,        # The slope threshold of the first filter iteration
               'average_sigma' : 7,           # The gaussian function used to average out local slope
               'dh0' : 0.1,                   # The slope threshold for flat areas
               'hole_cutoff' : -0.2}          # Threshold for individual holes beneath median in 3x3 kernel
 """
+
+# The Filter Class
 class ProgressiveMorphologicalFilter():
     def __init__(self, input_raster, parameters):
         for key, value in parameters.items():
             setattr(self, key, value)
-        
-        #Interpolate nan
-        self.input_raster = tinInterpolation(input_raster)
-        
+
+        self.input_raster = input_raster
+
     # To get rid of holes
     def medianFilter(self, input_raster):
-        filter_raster = nnInterpolation(input_raster)
-        median = ndimage.median_filter(filter_raster, size = (3,3))
-        output = np.where(filter_raster - median < self.hole_cutoff, np.nan, input_raster)
+        median = ndimage.median_filter(input_raster, size = (3,3))
+        output = np.where(input_raster - median < self.hole_cutoff, np.nan, input_raster)
         return output
 
     # The main filter algorithm
     def progressiveMorphologicalfilter(self, input_raster, slope_threshold):
-        
-        input_raster = tinInterpolation(input_raster)
+
         last_surface = np.copy(input_raster)
-        
+
         #The mask we use to indicate non-ground points
         mask = np.zeros(input_raster.shape)
         final = int(self.kernel_radius/self.c)
@@ -94,10 +92,10 @@ class ProgressiveMorphologicalFilter():
             window = (w,w)
             #Opening
             this_surface = ndimage.morphology.grey_opening(last_surface, size = window)
-            #Increasing maxdh by footprint radius in cells
+            #Increasing dhmax by diagonal window extent in cells
             dhmax = np.sqrt(k**2 + k**2) * self.c * slope_threshold
-            #Only mask those below cutoff
-            mask = np.where(input_raster - this_surface > dhmax, 1, mask)      #Could also subtract from last surface
+            #Only mask cells below cutoff
+            mask = np.where(last_surface - this_surface > dhmax, 1, mask)
             last_surface = this_surface
             k += 1          #one step further
 
@@ -115,8 +113,12 @@ class ProgressiveMorphologicalFilter():
 
 
     def filter(self):
+        print("Filtering holes...")
         self.hole_filtered = self.medianFilter(self.input_raster)
+        print("Beginning initial filtering...")
         self.initial_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.initial_cutoff)
+        print("Computing average slope...")
         self.scaling_matrix = self.scalingMatrix(self.initial_filtered)
+        print("Final filtering with adaptive threshold...")
         self.final_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.scaling_matrix)
         return self.final_filtered
