@@ -69,12 +69,16 @@ class ProgressiveMorphologicalFilter():
         for key, value in parameters.items():
             setattr(self, key, value)
         self.input_raster = input_raster
+        self.interpolated = nnInterpolation(input_raster)
 
     # To get rid of holes
     def medianFilter(self, input_raster):
+        #Footprint excludes center point in window
+        f = np.ones((3,3), dtype=bool)
+        f[1,1] = 0
         #The mask we use to indicate holes
         mask = np.ones(input_raster.shape, dtype=bool)
-        median = ndimage.median_filter(input_raster, size = (3,3))
+        median = ndimage.median_filter(input_raster, footprint = f)
         mask = np.where(input_raster - median < self.hole_cutoff, 0, mask)
         return mask
 
@@ -110,15 +114,16 @@ class ProgressiveMorphologicalFilter():
 
     def filter(self):
         print("Filtering holes...")
-        hole_mask = self.medianFilter(self.input_raster)
+        hole_mask = self.medianFilter(self.interpolated)
         self.hole_filtered = np.where(hole_mask, self.input_raster, np.nan)
         print("Beginning initial filtering...")
-        initial_mask = self.progressiveMorphologicalfilter(self.hole_filtered, self.initial_cutoff)
+        initial_mask = self.progressiveMorphologicalfilter(self.interpolated, self.initial_cutoff)
         self.initial_filtered = np.where(initial_mask, self.input_raster, np.nan)
         print("Computing average slope...")
         self.scaling_matrix = self.scalingMatrix(self.initial_filtered)
         print("Final filtering with adaptive threshold...")
-        second_mask = self.progressiveMorphologicalfilter(self.hole_filtered, self.scaling_matrix)
+        second_mask = self.progressiveMorphologicalfilter(self.interpolated, self.scaling_matrix)
+        self.second_filtered = np.where(second_mask, self.input_raster, np.nan)
         final_mask = hole_mask & initial_mask & second_mask
         self.final_filtered = np.where(final_mask, self.input_raster, np.nan)
         return self.final_filtered
