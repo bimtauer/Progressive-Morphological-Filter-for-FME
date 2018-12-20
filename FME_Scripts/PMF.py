@@ -56,7 +56,7 @@ from .MyRasterTools import slopeEstimation, nnInterpolation, tinInterpolation
 """
 # Parameters (Example)
 parameters = {'c' : 0.5,                     # The cell size of the input raster
-              'kernel_radius' : 6,           # The kernel size of the first filter iteration
+              'kernel_radius' : 15,          # The kernel size of the first filter iteration
               'initial_cutoff' : 0.4,        # The slope threshold of the first filter iteration
               'average_sigma' : 7,           # The gaussian function used to average out local slope
               'dh0' : 0.1,                   # The slope threshold for flat areas
@@ -68,22 +68,25 @@ class ProgressiveMorphologicalFilter():
     def __init__(self, input_raster, parameters):
         for key, value in parameters.items():
             setattr(self, key, value)
-
         self.input_raster = input_raster
+        self.interpolated = nnInterpolation(input_raster)
 
     # To get rid of holes
     def medianFilter(self, input_raster):
-        median = ndimage.median_filter(input_raster, size = (3,3))
-        output = np.where(input_raster - median < self.hole_cutoff, np.nan, input_raster)
-        return output
+        #Footprint excludes center point in window
+        f = np.ones((3,3), dtype=bool)
+        f[1,1] = 0
+        #The mask we use to indicate holes
+        mask = np.ones(input_raster.shape, dtype=bool)
+        median = ndimage.median_filter(input_raster, footprint = f)
+        mask = np.where(input_raster - median < self.hole_cutoff, 0, mask)
+        return mask
 
     # The main filter algorithm
-    def progressiveMorphologicalfilter(self, input_raster, slope_threshold):
-
-        last_surface = np.copy(input_raster)
+    def progressiveMorphologicalfilter(self, last_surface, slope_threshold):
 
         #The mask we use to indicate non-ground points
-        mask = np.zeros(input_raster.shape)
+        mask = np.ones(last_surface.shape, dtype=bool)
         final = int(self.kernel_radius/self.c)
         k = 1
         while k <= final:
@@ -95,12 +98,10 @@ class ProgressiveMorphologicalFilter():
             #Increasing dhmax by diagonal window extent in cells
             dhmax = np.sqrt(k**2 + k**2) * self.c * slope_threshold
             #Only mask cells below cutoff
-            mask = np.where(last_surface - this_surface > dhmax, 1, mask)
+            mask = np.where(last_surface - this_surface > dhmax, 0, mask)
             last_surface = this_surface
             k += 1          #one step further
-
-        output = np.where(mask, np.nan, input_raster)
-        return output
+        return mask
 
     def scalingMatrix(self, input_raster):
         z = slopeEstimation(input_raster, self.c)
@@ -111,14 +112,18 @@ class ProgressiveMorphologicalFilter():
         average_slope += self.dh0
         return average_slope
 
-
     def filter(self):
         print("Filtering holes...")
-        self.hole_filtered = self.medianFilter(self.input_raster)
+        hole_mask = self.medianFilter(self.interpolated)
+        self.hole_filtered = np.where(hole_mask, self.input_raster, np.nan)
         print("Beginning initial filtering...")
-        self.initial_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.initial_cutoff)
+        initial_mask = self.progressiveMorphologicalfilter(self.interpolated, self.initial_cutoff)
+        self.initial_filtered = np.where(initial_mask, self.input_raster, np.nan)
         print("Computing average slope...")
         self.scaling_matrix = self.scalingMatrix(self.initial_filtered)
         print("Final filtering with adaptive threshold...")
-        self.final_filtered = self.progressiveMorphologicalfilter(self.hole_filtered, self.scaling_matrix)
+        second_mask = self.progressiveMorphologicalfilter(self.interpolated, self.scaling_matrix)
+        self.second_filtered = np.where(second_mask, self.input_raster, np.nan)
+        final_mask = hole_mask & initial_mask & second_mask
+        self.final_filtered = np.where(final_mask, self.input_raster, np.nan)
         return self.final_filtered
