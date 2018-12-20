@@ -56,7 +56,7 @@ from .MyRasterTools import slopeEstimation, nnInterpolation, tinInterpolation
 """
 # Parameters (Example)
 parameters = {'c' : 0.5,                     # The cell size of the input raster
-              'kernel_radius' : 15,          # The kernel size of the first filter iteration
+              'kernel_radius' : 8,          # The kernel size of the first filter iteration
               'initial_cutoff' : 0.4,        # The slope threshold of the first filter iteration
               'average_sigma' : 7,           # The gaussian function used to average out local slope
               'dh0' : 0.1,                   # The slope threshold for flat areas
