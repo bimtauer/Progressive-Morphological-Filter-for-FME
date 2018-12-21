@@ -52,7 +52,7 @@ def nnInterpolation(raster):
 
         #Retrieve indexes as meshgrid of coordinates
         i = np.arange(0, leni)
-        j = np.arange(0, leni)
+        j = np.arange(0, lenj)
         jj, ii = np.meshgrid(i, j)
 
         #Stack array rows
