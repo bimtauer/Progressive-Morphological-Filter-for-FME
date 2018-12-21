@@ -197,7 +197,7 @@ def plotter(raster_list):
     plt.show()
     return
 ###############################################################################
-
+"""
 MyFilter = ProgressiveMorphologicalFilter(raster, parameters)
 output = MyFilter.filter()
 initial_filtered = MyFilter.initial_filtered
@@ -207,12 +207,12 @@ final_filtered = MyFilter.final_filtered
 # Plot all
 plotter([initial_filtered, scaling_matrix, final_filtered, output])
 
-"""
+
 test = np.where(output < 0, output, 1)
 plotter([output, test])
-"""
 
-"""
+
+
 from writers import asciiOut
 asciiOut(final, "MorphFiltered_ins{}_inc{}_avg{}_dh0{}_sca{}_hol{}".format(initial_size,
          initial_cutoff, average_sigma, dh0, scaling_factor, hole_cutoff))
