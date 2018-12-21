@@ -14,6 +14,7 @@ class FeatureProcessor(object):
         # 1. Retrieve raster tiles as numpy array
         MyReader = RasterReader(feature)
         data, self.rasterProperties = MyReader.read(feature)
+        data[data == -9999] = np.nan
         print("Beginning filtering:")
         # 2. Create an instance of ProgressiveMorphologicalFilter with the respective parameters
         parameters = {'c' : 0.5,                     # The cell size of the input raster
@@ -21,7 +22,7 @@ class FeatureProcessor(object):
                       'initial_cutoff' : 0.5,        # The slope threshold of the first filter iteration
                       'average_sigma' : 7,           # The gaussian function used to average out local slope
                       'dh0' : 0.1,                   # The slope threshold for flat areas
-                      'hole_cutoff' : -0.5}          # Threshold for individual holes beneath median in 3x3 kernel
+                      'hole_cutoff' : -0.2}          # Threshold for individual holes beneath median in 3x3 kernel
         MyFilter = ProgressiveMorphologicalFilter(data, parameters)
         filtered = MyFilter.filter()
         filtered[np.isnan(filtered)] = -9999.0    # The FME nodata value of the raster  #TODO: make dynamic

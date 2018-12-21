@@ -56,7 +56,7 @@ from .MyRasterTools import slopeEstimation, nnInterpolation, tinInterpolation
 """
 # Parameters (Example)
 parameters = {'c' : 0.5,                     # The cell size of the input raster
-              'kernel_radius' : 8,          # The kernel size of the first filter iteration
+              'kernel_radius' : 15,          # The kernel size of the first filter iteration
               'initial_cutoff' : 0.4,        # The slope threshold of the first filter iteration
               'average_sigma' : 7,           # The gaussian function used to average out local slope
               'dh0' : 0.1,                   # The slope threshold for flat areas
@@ -69,7 +69,9 @@ class ProgressiveMorphologicalFilter():
         for key, value in parameters.items():
             setattr(self, key, value)
         self.input_raster = input_raster
-        self.interpolated = np.where(np.isnan(input_raster), 9999, input_raster) #nnInterpolation(input_raster)
+
+        print("Interpolating input surface. This can take up to several minutes...")
+        self.interpolated = nnInterpolation(input_raster)
 
     # To get rid of holes
     def medianFilter(self, input_raster):
