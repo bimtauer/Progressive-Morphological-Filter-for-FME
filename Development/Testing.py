@@ -16,7 +16,7 @@ import numpy as np
 
 
 #New test area inner city terrestrial
-raster = np.loadtxt(r"./Data/GEOTIFF.asc", skiprows = 6)
+raster = np.loadtxt(r"./Data/GEOTIFF2.asc", skiprows = 6)
 raster[raster == -9999] = np.nan
 
 
