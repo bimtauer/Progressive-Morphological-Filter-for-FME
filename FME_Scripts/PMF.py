@@ -69,6 +69,8 @@ class ProgressiveMorphologicalFilter():
         for key, value in parameters.items():
             setattr(self, key, value)
         self.input_raster = input_raster
+
+        print("Interpolating input surface. This can take up to several minutes...")
         self.interpolated = nnInterpolation(input_raster)
 
     # To get rid of holes

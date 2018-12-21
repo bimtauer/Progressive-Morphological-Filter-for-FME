@@ -10,13 +10,13 @@ import numpy as np
 
 def sectionVisualizer(yy, xx, smoothing=1): # ii, jj
     #expects tuple like (0,3), (0,3) as input
-    
+
     #Replace -9999 with NaN
     raster[raster==-9999]=np.nan
-    
+
     #Setting up points (and vectors) collections possible length
     points = np.zeros(( int((xx[1]-xx[0])/smoothing)*int((yy[1]-yy[0])/smoothing) , 6))
-    
+
     #Counting and looping
     pointID = 0
     for i in range(yy[0], yy[1], smoothing):
@@ -27,34 +27,34 @@ def sectionVisualizer(yy, xx, smoothing=1): # ii, jj
             points[pointID, 3] = normals[i, j, 0]       #X component of normal
             points[pointID, 4] = normals[i, j, 1]       #Y component of normal
             points[pointID, 5] = normals[i, j, 2]       #Z component of normal
-            
+
             pointID += 1
 
-    #Plotting    
+    #Plotting
     fig = plt.figure()
-    
-    ax = fig.gca(projection='3d') 
+
+    ax = fig.gca(projection='3d')
     ax.set_xlabel('X coordinate')
     ax.set_ylabel('Y coordinate')
     ax.set_zlabel('Elevation (m)')
-    
+
     #Scaling of axes
     #ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([2, 2, 1, 1]))
     #ax.set_zticks([0,10,20])
-    
+
     #Scaling for colors
     mynorm = plt.Normalize(vmin=0, vmax=10)
-    
+
     #Plot surface
     ax.plot_trisurf(points[:, 0], points[:, 1], points[:, 2],  cmap=plt.cm.viridis, norm=mynorm, linewidth=0.2, antialiased=True)
     #ax.bar3d(points[:, 1], points[:, 0], points[:, 2], 0, a, a,  shade=True)
     #surf=ax.plot_trisurf(points[:, 1], points[:, 0], points[:, 2],  cmap=plt.cm.viridis, linewidth=0.2, antialiased=True)
     #fig.colorbar(surf)
-    
+
     #Plot vectors
     av = fig.gca(projection='3d')
     av.quiver(points[:, 0], points[:, 1], points[:, 2], points[:, 3], points[:, 4], points[:, 5], length= 0.2, color= "red")
-    plt.show()    
+    plt.show()
     return
 
 
