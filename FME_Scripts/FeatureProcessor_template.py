@@ -3,7 +3,7 @@ import fmeobjects
 import numpy as np
 import sys
 # The path where the python scripts are currently stored:
-sys.path.insert(0,r'\\intra.malmo.se\dfs\gemensamt\Projekt\lidar-data (josbir)\FME\DEM Generation from Lidar (Project with Tim, Oct.18 - Dec. 18)\Git\dem-filter')
+sys.path.insert(0,r'PATH_TO_DIR')
 from FME_Scripts.FMEInOut import RasterReader, RasterWriter
 from FME_Scripts.PMF import ProgressiveMorphologicalFilter
 
