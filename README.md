@@ -1,4 +1,4 @@
-# dem-filter
+# Progressive Morphological Filter
 
 This is a morphological filter to extract ground level points from unfiltered
 elevation rasters. It can be used to generate a DTM from a minimum elevation raster.
